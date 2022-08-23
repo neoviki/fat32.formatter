@@ -1,0 +1,53 @@
+#!/bin/bash
+
+
+
+#  FAT32 formatter utility
+#
+#  			Author : Viki (a) Vignesh Natarajan
+#			Contact: neoviki.com
+#
+
+
+
+if [ -z $1 ]; then
+    echo "error: feed storage path"
+    exit 1
+fi
+
+ls $STORAGE_PATH 2>/dev/null 1>/dev/null
+if [ $? -ne 0 ]; then
+   echo "error: wrong storage path"
+   exit 1
+fi
+
+STORAGE_PATH=$1
+
+STORAGE_DEVICE=`df -h $STORAGE_PATH | tail -1 |  awk '{print $1}'`
+
+if [ -z $STORAGE_DEVICE ]; then
+   echo "error: unable to find storage device"
+   exit 1
+fi
+
+
+ls $STORAGE_DEVICE 2>/dev/null 1>/dev/null
+if [ $? -ne 0 ]; then
+   echo "error: unable to find storage device"
+   exit 1
+fi
+
+
+echo "STORAGE_PATH [ $STORAGE_PATH] -> STORAGE_DEVICE [ $STORAGE_DEVICE ]"
+
+#unmount
+sudo umount $STORAGE_DEVICE 
+#sudo mkfs.vfat -F 32 -n "EXTERNAL_STORAGE" $STORAGE_DEVICE
+sudo mkfs.vfat -F 32 $STORAGE_DEVICE
+
+if [ $? -ne 0 ]; then
+   echo "error: formatting"
+   exit 1
+fi
+
+echo "successfully formated storage [ $STORAGE_PATH ] "
