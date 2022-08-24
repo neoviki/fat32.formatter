@@ -8,46 +8,100 @@
 #			Contact: neoviki.com
 #
 
+STORAGE_PATH=""
+STORAGE_DEVICE=""
+ARG1="$1"
+
+verify_args()
+{
+
+	if [ -z $ARG1 ]; then
+		echo
+    	echo "    error: feed storage path"
+		echo
+		echo "    use \"lsblk -p\" command to know your storage details"
+		echo
+		
+    	exit 1
+	fi
+
+	if [[ "$ARG1" == "/dev/"* ]]; then
+   		STORAGE_DEVICE="$ARG1"
+	else
+   		STORAGE_PATH=$ARG1
+	fi
+}
+
+detect_storage_device()
+{
+
+	STORAGE_DEVICE=`df -h $STORAGE_PATH | tail -1 |  awk '{print $1}'`
+
+	if [ -z $STORAGE_DEVICE ]; then
+   		echo "	error: unable to find storage device"
+   		exit 1
+	fi	
 
 
-if [ -z $1 ]; then
-    echo "error: feed storage path"
-    exit 1
-fi
+	ls $STORAGE_DEVICE 2>/dev/null 1>/dev/null
+	if [ $? -ne 0 ]; then
+   		echo "	error: unable to find storage device"
+   		exit 1
+	fi
 
-ls $STORAGE_PATH 2>/dev/null 1>/dev/null
-if [ $? -ne 0 ]; then
-   echo "error: wrong storage path"
-   exit 1
-fi
-
-STORAGE_PATH=$1
-
-STORAGE_DEVICE=`df -h $STORAGE_PATH | tail -1 |  awk '{print $1}'`
-
-if [ -z $STORAGE_DEVICE ]; then
-   echo "error: unable to find storage device"
-   exit 1
-fi
+}
 
 
-ls $STORAGE_DEVICE 2>/dev/null 1>/dev/null
-if [ $? -ne 0 ]; then
-   echo "error: unable to find storage device"
-   exit 1
-fi
+verity_storage_path()
+{
+	if [ -z $STORAGE_PATH ]; then
+		return
+    fi
+
+	ls $STORAGE_PATH 2>/dev/null 1>/dev/null
+
+	if [ $? -ne 0 ]; then
+		echo "	error: wrong storage path"
+		exit 1
+	fi
+
+	detect_storage_device
+}
+
+validate_inputs()
+{
+	if [ -z $STORAGE_DEVICE ]; then
+		exit 1
+	fi
+
+	if [ -z $STORAGE_PATH ]; then
+		echo
+		echo "	STORAGE_DEVICE [ $STORAGE_DEVICE ]"
+		echo
+	else
+		echo
+		echo "	STORAGE_PATH [ $STORAGE_PATH] -> STORAGE_DEVICE [ $STORAGE_DEVICE ]"
+		echo
+	fi
 
 
-echo "STORAGE_PATH [ $STORAGE_PATH] -> STORAGE_DEVICE [ $STORAGE_DEVICE ]"
+}
+
+verify_args
+verity_storage_path
+validate_inputs
+
+
 
 #unmount
-sudo umount $STORAGE_DEVICE 
+sudo umount $STORAGE_DEVICE 2> /dev/null  1>/dev/null
 #sudo mkfs.vfat -F 32 -n "EXTERNAL_STORAGE" $STORAGE_DEVICE
-sudo mkfs.vfat -F 32 $STORAGE_DEVICE
+sudo mkfs.vfat -F 32 $STORAGE_DEVICE 2> /dev/null 1>/dev/null
 
 if [ $? -ne 0 ]; then
-   echo "error: formatting"
+   echo "	error: formatting"
    exit 1
 fi
 
-echo "successfully formated storage [ $STORAGE_PATH ] "
+echo "	successfully formated storage"
+echo
